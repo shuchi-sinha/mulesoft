@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f2793fd6-7b69-4a5c-a81b-57857f6df184" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="bf791ef4-5e72-419f-9233-663a5dc38097" >
+		<http:request-connection host="dummy.restapiexample.com"/>
+	</http:request-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="d87b9512-2439-430b-89f0-1e9df59dae26" >
+		<wsc:connection wsdlLocation="http://www.dneonline.com/calculator.asmx?wsdl" service="Calculator" port="CalculatorSoap" address="http://www.dneonline.com/calculator.asmx" >
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
+		</wsc:connection>
+	</wsc:config>
+	<flow name="hellomuleFlow1" doc:id="70d2cb6f-ec35-43d1-b326-e4dd9c18dbc4" >
+		<http:listener doc:name="Listener_Add2Numbers" doc:id="d074dd7f-253d-4934-b071-530974c6a6dd" config-ref="HTTP_Listener_config" path="//add2numbers"/>
+		<set-variable value="#[attributes.queryParams.Number1]" doc:name="a" doc:id="5373925f-32a7-4ece-8a80-88d84f2fd34b" variableName="a"/>
+		<set-variable value="#[attributes.queryParams.Number2]" doc:name="b" doc:id="876f416d-c6b9-482f-8ba1-a90718f7e446" variableName="b"/>
+		<ee:transform doc:name="Transform Message" doc:id="18c57e12-256a-4972-9cdb-5e870144bce0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://tempuri.org/
+---
+{
+	ns0#Add: {
+		ns0#intA: vars.a as Number,
+		ns0#intB: vars.b as Number
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="376382e8-642d-449e-a4e1-b9e16062d38a" config-ref="Web_Service_Consumer_Config" operation="Add"/>
+	</flow>
+	<flow name="schedulerflow" doc:id="0ffdb196-de57-410f-bd5d-089bc5b048b1" >
+		<scheduler doc:name="Scheduler" doc:id="68987b42-0485-4447-8bbd-06349e6f5ae1" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Scheduler Logger" doc:id="ce1c5fd8-4493-4674-82d6-daaa5ed5d76d" message="**SCHEDULER got invoked**"/>
+	</flow>
+	<flow name="RestWebService" doc:id="5c243d4e-74f8-41f0-a635-55a95e8e742c" >
+		<http:listener doc:name="Listener" doc:id="abb76ca3-b8ad-4022-afb4-e8c3cfffe761" config-ref="HTTP_Listener_config" path="/avinshuchi"/>
+		<http:request method="GET" doc:name="call REST employee WS" doc:id="db1c8e7d-363c-4327-9d73-2f34c0a2cbc6" config-ref="HTTP_Request_configuration" path="/api/v1/employees"/>
+	</flow>
+	<flow name="PrivateFlow" doc:id="889a1c79-fb8d-4770-a8ef-28b1c5ed7ee3" >
+		<logger level="INFO" doc:name="Logger" doc:id="29be149c-8a39-4ddf-9520-9ac42c421a3f" message="**Private Flow invoked **"/>
+	</flow>
+	<flow name="hellomuleFlow" doc:id="53529654-11b2-4d61-84e3-f7f9f09e4dd4" >
+		<http:listener doc:name="GET avin" doc:id="4add030f-34f6-4e99-b6c5-0c04f8250a2d" config-ref="HTTP_Listener_config" path="/avin"/>
+		<set-payload value="Good morning Avinash!!" doc:name="Set Payload" doc:id="e6f4e616-6a02-4fff-9fb9-14c930531861" />
+		<flow-ref doc:name="Flow Reference" doc:id="552cf827-11fd-4afc-9bb3-4bb0045b56b1" name="PrivateFlow"/>
+	</flow>
+</mule>
